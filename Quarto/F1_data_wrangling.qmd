@@ -19,10 +19,10 @@ library(janitor)
 library(VIM)
 Sys.setenv(TZ = "UTC")
 
-session_data <- read_csv("Data/session_data")
-lap_data <- read_csv("/Users/colewagner632/Library/CloudStorage/OneDrive-SouthernMethodistUniversity/STAT 6341/Project/lap_data.csv")
-weather_data <- read_csv("/Users/colewagner632/Library/CloudStorage/OneDrive-SouthernMethodistUniversity/STAT 6341/Project/weather_data.csv")
-track_data <- read_csv("/Users/colewagner632/Library/CloudStorage/OneDrive-SouthernMethodistUniversity/STAT 6341/Project/List_of_Formula_One_circuits_2.csv")
+session_data <- read_csv("../Data/session_data.csv")
+lap_data <- read_csv("../Data/lap_data.csv")
+weather_data <- read_csv("../Data/weather_data.csv")
+track_data <- read_csv("../Data/List_of_Formula_One_circuits_2.csv")
 ```
 
 ## Join Session and Track Data
@@ -137,6 +137,6 @@ full_clean_types <- full_no_missing %>%
 
 # write_csv(
 #   full_clean_types,
-#   "/Users/colewagner632/Library/CloudStorage/OneDrive-SouthernMethodistUniversity/STAT 6341/Project/full_clean_types.csv"
+#   "../Data/full_clean_types.csv"
 #   )
 ```

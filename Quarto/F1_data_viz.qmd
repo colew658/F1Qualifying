@@ -20,7 +20,7 @@ library(plotly)
 library(reactable)
 library(htmltools)
 f1_laps <- read.csv(
-  "/Users/colewagner632/Library/CloudStorage/OneDrive-SouthernMethodistUniversity/STAT 6341/Project/full_clean_types.csv"
+  "../Data/full_clean_types.csv"
 )
 ```
 
