@@ -1,0 +1,82 @@
+---
+title: "F1 Project Data Acquisition"
+author: "Cole Wagner"
+format:
+  html:
+    toc: true
+    self-contained: true
+    code-fold: true
+    code-line-numbers: true
+    code-tools: true
+    cache: true
+    theme: "yeti"
+editor: visual
+---
+
+```{r setup}
+library(httr)
+library(jsonlite)
+library(robotstxt)
+library(rvest)
+library(tidyverse)
+library(janitor)
+library(polite)
+```
+
+```{r sessionids}
+#| message: false
+# get general data for all qualifying sessions in the api
+session_data <- fromJSON(content(GET(
+  "https://api.openf1.org/v1/sessions?session_type=Qualifying"), 'text'))
+
+# write_csv(
+#   session_data,
+#   "../Data/session_data.csv"
+#   )
+```
+
+```{r lapdata}
+#| message: false
+# get data for the 90 fastest laps in each qualifying
+session_keys <- session_data$session_key
+lap_data_list <- list()
+i <- 1
+
+for (x in session_keys) {
+  lap_data_list[[i]] <- fromJSON(content(GET(
+    paste0("https://api.openf1.org/v1/laps?session_key=", x)), 'text')) %>%
+    arrange(lap_duration) %>%
+    head(., 90)
+  
+  i <- i + 1
+  Sys.sleep(0.5)
+}
+
+lap_data <- do.call(rbind, lap_data_list)
+
+# write_csv(
+#   lap_data,
+#   "../Data/lap_data.csv"
+#   )
+```
+
+```{r allweather}
+# Get weather data for all qualifying sessions
+weather_data_list <- list()
+i <- 1
+
+for (x in session_keys) {
+  weather_data_list[[i]] <- fromJSON(content(GET(
+    paste0("https://api.openf1.org/v1/weather?session_key=", x)), 'text'))
+  
+  i <- i + 1
+  Sys.sleep(0.5)
+}
+
+weather_data <- do.call(rbind, weather_data_list)
+
+# write_csv(
+#   weather_data,
+#   "../Data/weather_data.csv"
+#   )
+```

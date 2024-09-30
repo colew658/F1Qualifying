@@ -1,0 +1,142 @@
+---
+title: "F1 Project Data Wrangling"
+author: "Cole Wagner"
+format:
+  html:
+    toc: true
+    self-contained: true
+    code-fold: true
+    code-line-numbers: true
+    code-tools: true
+    cache: true
+    theme: "yeti"
+editor: visual
+---
+
+```{r setup}
+library(tidyverse)
+library(janitor)
+library(VIM)
+Sys.setenv(TZ = "UTC")
+
+session_data <- read_csv("Data/session_data")
+lap_data <- read_csv("/Users/colewagner632/Library/CloudStorage/OneDrive-SouthernMethodistUniversity/STAT 6341/Project/lap_data.csv")
+weather_data <- read_csv("/Users/colewagner632/Library/CloudStorage/OneDrive-SouthernMethodistUniversity/STAT 6341/Project/weather_data.csv")
+track_data <- read_csv("/Users/colewagner632/Library/CloudStorage/OneDrive-SouthernMethodistUniversity/STAT 6341/Project/List_of_Formula_One_circuits_2.csv")
+```
+
+## Join Session and Track Data
+
+```{r track_session_join}
+# Filter to only tracks in the 2023 and 2024 seasons
+current_tracks <- track_data %>%
+  filter(str_detect(`Season(s)`, "2023") | str_detect(`Season(s)`, "2024"))
+
+# Join the datasets
+session_track <- left_join(session_data, current_tracks, by = join_by(location == Location))
+
+# Check the incomplete rows
+location_disagree <- session_track %>%
+  filter(is.na(Circuit))
+
+# Fix specific disagreements in location
+current_tracks$Location[current_tracks$Location == "Miami Gardens"] <- "Miami"
+current_tracks$Location[current_tracks$Location == "Monte Carlo"] <- "Monaco"
+current_tracks$Location[current_tracks$Location == "Montmeló"] <- "Barcelona"
+current_tracks$Location[current_tracks$Location == "Montreal"] <- "Montréal"
+current_tracks$Location[current_tracks$Location == "Mogyoród"] <- "Budapest"
+current_tracks$Location[current_tracks$Location == "Stavelot"] <- "Spa-Francorchamps"
+current_tracks$Location[current_tracks$Location == "Paradise"] <- "Las Vegas"
+current_tracks$Location[current_tracks$Location == "Abu Dhabi"] <- "Yas Island"
+
+# Rejoin the datasets and do some preliminary cleaning
+full_session_track <- left_join(
+  session_data, current_tracks, by = join_by(location == Location)
+  ) %>%
+  # Create consistent naming structure
+  clean_names(case = "all_caps") %>%
+  # Remove unneccessary columns
+  select(-c(MAP, COUNTRY, SEASON_S, GRANDS_PRIX, GRANDS_PRIX_HELD)) %>%
+  # Create a numeric length column
+  mutate(LENGTH_KM = as.numeric(str_extract(LAST_LENGTH_USED, "^.{5}"))) %>%
+  # Now I can remove the chr version of length
+  select(-LAST_LENGTH_USED)
+```
+
+## Join Lap and Weather Data
+
+```{r lap_weather_join}
+# Round the time for both datasets to the nearest minute
+lap_data$date_start <- round_date(lap_data$date_start, "mins")
+weather_data$date <- round_date(weather_data$date, "mins")
+
+# Remove the new duplicated date
+distinct_weather <- weather_data %>% distinct(date, .keep_all = T)
+
+
+# Join the two datasets by date
+lap_weather <- left_join(
+  lap_data, distinct_weather, by = join_by(date_start == date)
+) %>%
+  # Create consistent naming structure
+  clean_names(case = "all_caps") %>%
+  # Remove duplicate columns
+  select(-c(SESSION_KEY_Y, MEETING_KEY_Y)) %>%
+  rename(MEETING_KEY = MEETING_KEY_X, SESSION_KEY = SESSION_KEY_X)
+```
+
+## Join All Data
+
+```{r final_join}
+full_data <- full_join(
+  lap_weather, full_session_track, by = join_by(MEETING_KEY, SESSION_KEY)
+  ) %>%
+  # Fix duplicate column naming issue
+  rename(
+    DATE_START_LAP = DATE_START.x,
+    DATE_START_SESSION = DATE_START.y,
+    DATE_END_SESSION = DATE_END) %>%
+  # Remove unneccessary columns
+  select(
+    -c(IS_PIT_OUT_LAP, SEGMENTS_SECTOR_1, SEGMENTS_SECTOR_2, SEGMENTS_SECTOR_3,
+       COUNTRY_KEY, COUNTRY_CODE, CIRCUIT_KEY)
+    )
+
+```
+
+## Missing Data
+
+```{r missingdata}
+missing_dat <- full_data[rowSums(is.na(full_data)) > 0,]
+
+# Remove rows with no weather data
+full_weather <- full_data %>%
+  filter(!is.na(AIR_TEMPERATURE))
+
+# Recreate missing data
+missing_dat <- full_weather[rowSums(is.na(full_weather)) > 0,]
+
+# Use KNN imputation to fill in the rest of the missing values
+full_no_missing <- kNN(full_weather, imp_var = F)
+
+```
+
+## Data Typing
+
+```{r typing}
+full_clean_types <- full_no_missing %>%
+  # Automatic conversion
+  type_convert() %>%
+  # Convert some numeric variables to factors
+  mutate(
+    MEETING_KEY = as.factor(MEETING_KEY),
+    SESSION_KEY = as.factor(SESSION_KEY),
+    DRIVER_NUMBER = as.factor(DRIVER_NUMBER),
+    RAINFALL = as.factor(RAINFALL)
+  )
+
+# write_csv(
+#   full_clean_types,
+#   "/Users/colewagner632/Library/CloudStorage/OneDrive-SouthernMethodistUniversity/STAT 6341/Project/full_clean_types.csv"
+#   )
+```
