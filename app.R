@@ -1,0 +1,256 @@
+#
+# This is a Shiny web application. You can run the application by clicking
+# the 'Run App' button above.
+#
+# Find out more about building applications with Shiny here:
+#
+#    https://shiny.posit.co/
+#
+
+library(shiny)
+library(shinythemes)
+library(tidyverse)
+library(RColorBrewer)
+library(plotly)
+library(reactable)
+library(htmltools)
+f1_laps <- read.csv(
+  "/Users/colewagner632/Library/CloudStorage/OneDrive-SouthernMethodistUniversity/STAT 6341/Project/full_clean_types.csv"
+)
+
+# Rainfall Boxplot -------------------------------------------------------------
+
+# Pull only tracks that had rain during their qualifying session
+rainy_tracks <- unique(f1_laps$CIRCUIT_SHORT_NAME[f1_laps$RAINFALL == 1])
+
+rain_box <- f1_laps %>%
+  filter(CIRCUIT_SHORT_NAME %in% rainy_tracks) %>%
+  plot_ly(
+    type = "box"
+  ) %>%
+  # Add a trace for rainy laps
+  add_trace(
+    x = ~ CIRCUIT_SHORT_NAME[RAINFALL == 1],
+    y = ~ LAP_DURATION[RAINFALL == 1],
+    legendgroup = "Rain",
+    name = "Rain",
+    color = I("blue")
+  ) %>%
+  # Add a trace for dry laps
+  add_trace(
+    x = ~ CIRCUIT_SHORT_NAME[RAINFALL == 0],
+    y = ~ LAP_DURATION[RAINFALL == 0],
+    legendgroup = "No Rain",
+    name = "No Rain"
+  ) %>%
+  # Set the axis and overall titles
+  layout(
+    title = "Distribution of Lap Times by Rain Status",
+    yaxis = list(
+      title = "Lap Duration (Seconds)"
+    ),
+    xaxis = list(
+      title = "Circuit Name"
+    ),
+    boxmode = "group"
+  )
+
+# Circuit Type Histogram -------------------------------------------------------
+type_laptime <- f1_laps %>%
+  plot_ly(
+    type = "histogram"
+  ) %>%
+  # Add a trace for race circuit laps
+  add_trace(
+    x = ~ LAP_DURATION[TYPE == "Race circuit"],
+    legendgroup = "Race Circuit",
+    name = "Race Circuit",
+    color = I("dodgerblue"),
+    alpha = 0.5,
+    nbinsx = 20,
+    histnorm = "percent",
+    hovertemplate = paste(
+      "Lap Time (sec): ", "%{x}",
+      "<br>Percentage of Laps: ", "%{y}", "%"
+    )
+  ) %>%
+  # Add a trace for street circuit laps
+  add_trace(
+    x = ~ LAP_DURATION[TYPE == "Street circuit"],
+    legendgroup = "Street Circuit",
+    name = "Street Circuit",
+    color = I("firebrick1"),
+    alpha = 0.5,
+    nbinsx = 20,
+    histnorm = "percent",
+    hovertemplate = paste(
+      "Lap Time (sec): ", "%{x}",
+      "<br>Percentage of Laps: ", "%{y}", "%"
+    )
+  ) %>%
+  # Adjust overall labels and format
+  layout(
+    barmode = "overlay",
+    title = "Percentage Distribution of Lap Times by Circuit Type",
+    xaxis = list(
+      title = "Lap Time (Seconds)"
+    ),
+    yaxis = list(
+      title = "Percentage of Laps"
+    )
+  )
+
+# Circuit Lap Time Bar Chart ---------------------------------------------------
+circuit_times <- f1_laps %>%
+  group_by(CIRCUIT_SHORT_NAME) %>%
+  # Find mean and sd of lap times for each circuit
+  summarise(
+    avg_time = mean(LAP_DURATION),
+    sd_time = sd(LAP_DURATION)
+  ) %>%
+  arrange(desc(avg_time))
+
+circuit_bar <- ggplot(
+  circuit_times,
+  aes(
+    # Plot the circuits in descending order of average lap time
+    x = factor(CIRCUIT_SHORT_NAME,
+               levels = CIRCUIT_SHORT_NAME
+    ),
+    y = avg_time,
+    fill = CIRCUIT_SHORT_NAME
+  )
+) +
+  geom_bar(stat = "identity", color = "black") +
+  # Create 1 sd error bars
+  geom_errorbar(
+    ymin = circuit_times$avg_time - circuit_times$sd_time,
+    ymax = circuit_times$avg_time + circuit_times$sd_time,
+    width = 0.2
+  ) +
+  theme_bw() +
+  theme(
+    legend.position = "None",
+    axis.text.x = element_text(angle = 60, hjust = 1, size = 12),
+    axis.text.y = element_text(size = 12),
+    title = element_text(size = 18, face = "bold"),
+    axis.title = element_text(size = 16, face = "bold"),
+    plot.caption = element_text(size = 8, face = "plain")
+  ) +
+  labs(title = "Average Lap Time for Each Circuit 2023-2024",
+       x = "Circuit Name",
+       y = "Average Lap Time",
+       caption = "*Error bars represent one standard deviation.")
+
+# Weather Reactable ------------------------------------------------------------
+# Find the average of all weather data for each circuit in each year
+weather_table <- f1_laps %>%
+  group_by(CIRCUIT_SHORT_NAME, YEAR) %>%
+  summarise(
+    avg_temp = round(mean(AIR_TEMPERATURE), 3),
+    avg_wind = round(mean(WIND_SPEED), 3),
+    avg_hum = round(mean(HUMIDITY), 1),
+    avg_pressure = round(mean(PRESSURE), 3),
+    avg_rain = mean(RAINFALL),
+    # Convert rain into a factor
+    rain_factor = ifelse(avg_rain > 0, "Yes", "No")
+  ) %>%
+  select(-avg_rain)
+
+temp_pal <- function(x) rgb(colorRamp(c("white", "firebrick1"))(x), maxColorValue = 255)
+
+# Create a bar chart widget
+bar_chart <- function(label, width = "100%", height = "1rem", fill = "#00bfc4", background = NULL) {
+  bar <- div(style = list(background = fill, width = width, height = height))
+  chart <- div(style = list(flexGrow = 1, marginLeft = "0.5rem", background = background), bar)
+  div(style = list(display = "flex", alignItems = "center"), label, chart)
+}
+
+# Create a status badge widget
+status_badge <- function(color = "#aaa", width = "0.55rem", height = width) {
+  span(style = list(
+    display = "inline-block",
+    marginRight = "0.5rem",
+    width = width,
+    height = height,
+    backgroundColor = color,
+    borderRadius = "50%"
+  ))
+}
+
+weather_reactable <- reactable(
+  weather_table,
+  columns = list(
+    CIRCUIT_SHORT_NAME = colDef(name = "Circuit"),
+    YEAR = colDef(name = "Year"),
+    avg_temp = colDef(
+      name = "Temperature (°C)",
+      # Change cell background color based on temperature
+      style = function(value) {
+        normalized <- (value - min(weather_table$avg_temp)) / (max(weather_table$avg_temp) - min(weather_table$avg_temp))
+        color <- temp_pal(normalized)
+        list(background = color)
+      }
+    ),
+    avg_wind = colDef(name = "Wind Speed (m/s)"),
+    avg_hum = colDef(
+      name = "Relative Humidity",
+      format = colFormat(percent = T, digits = 1),
+      # Create bar chart based on relative humidity
+      cell = function(value) {
+        width <- paste0(value / max(weather_table$avg_hum) * 100, "%")
+        bar_chart(value, width = width, fill = "skyblue", background = "#e1e1e1")
+      }
+    ),
+    avg_pressure = colDef(name = "Pressure (mbar)"),
+    rain_factor = colDef(
+      name = "Rain",
+      # Create a status badge based on whether it was raining or not
+      cell = function(value) {
+        color <- switch(value,
+                        Yes = "hsl(214, 45%, 50%)",
+                        No = "hsl(30, 97%, 70%)"
+        )
+        badge <- status_badge(color = color)
+        tagList(badge, value)
+      }
+    )
+  ),
+  bordered = TRUE,
+  highlight = TRUE,
+  striped = TRUE,
+  filterable = TRUE,
+  defaultPageSize = 10,
+  theme = reactableTheme(
+    borderColor = "#959595",
+    stripedColor = "ivory3",
+    highlightColor = "#98F5FF",
+    cellPadding = "8px 12px",
+    searchInputStyle = list(width = "100%")
+  )
+)
+
+# UI and Server ----------------------------------------------------------------
+
+# Define UI for application
+ui <- fluidPage(
+  theme = shinytheme("united"),
+  titlePanel("Formula One 2023-2024 Qualifying Data Visualizations"),
+  tabsetPanel(
+    tabPanel("Circuit Average Times", plotOutput("barchart")),
+    tabPanel("Rainfall", plotlyOutput("boxplot")),
+    tabPanel("Street vs. Race Circuit", plotlyOutput("histogram")),
+    tabPanel("Weather Averages", reactableOutput("weather_avgs")),
+  )
+)
+
+# Define server logic
+server <- function(input, output) {
+  output$boxplot <- renderPlotly({rain_box})
+  output$histogram <- renderPlotly({type_laptime})
+  output$barchart <- renderPlot({circuit_bar})
+  output$weather_avgs <- renderReactable({weather_reactable})
+}
+
+# Run the application 
+shinyApp(ui = ui, server = server)
