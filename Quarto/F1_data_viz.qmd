@@ -65,6 +65,24 @@ rain_box <- f1_laps %>%
 rain_box
 ```
 
+Why do Montreal, Hungaroring, and Spa all have lower average lap times when it is raining?
+
+```{r rain_check}
+# Filter to only see laps for the circuits in question
+rain_checks <- f1_laps %>%
+  filter(CIRCUIT_SHORT_NAME %in% c("Montreal", "Hungaroring", "Spa-Francorchamps")) %>%
+  group_by(CIRCUIT_SHORT_NAME, YEAR) %>%
+  summarise(
+    total_laps = n(),
+    laps_in_rain = sum(RAINFALL == 1)
+  )
+
+```
+
+For Montreal, there was only rain in 13 of the 90 recorded laps.
+For Hungary, the rain wasn't severe enough to switch off standard soft tyres.
+For Spa, the rain was so heavy that everyone had to use intermediate tyres regardless of the current rain status.
+
 ## Overlapping Histograms for Lap Times by Circuit Type
 
 ```{r type_laptime}
