@@ -232,7 +232,7 @@ weather_reactable <- reactable(
     ),
     avg_wind = colDef(name = "Wind Speed (m/s)"),
     avg_hum = colDef(
-      name = "Relative Humidity",
+      name = "Relative Humidity (%)",
       format = colFormat(percent = T, digits = 1),
       # Create bar chart based on relative humidity
       cell = function(value) {
