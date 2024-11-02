@@ -15,7 +15,7 @@ library(plotly)
 library(reactable)
 library(htmltools)
 f1_laps <- read.csv(
-  "Data/full_clean_types.csv"
+  "Data/full_no_missing.csv"
 )
 
 # Rainfall Boxplot -------------------------------------------------------------

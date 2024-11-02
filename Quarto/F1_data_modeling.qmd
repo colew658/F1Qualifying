@@ -31,3 +31,5 @@ full_clean_types <- full_no_missing %>%
     RAINFALL = as.factor(RAINFALL)
   )
 ```
+
+
