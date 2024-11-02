@@ -20,7 +20,7 @@ library(plotly)
 library(reactable)
 library(htmltools)
 f1_laps <- read.csv(
-  "../Data/full_clean_types.csv"
+  "../Data/full_no_missing.csv"
 )
 ```
 
@@ -79,9 +79,7 @@ rain_checks <- f1_laps %>%
 
 ```
 
-For Montreal, there was only rain in 13 of the 90 recorded laps.
-For Hungary, the rain wasn't severe enough to switch off standard soft tyres.
-For Spa, the rain was so heavy that everyone had to use intermediate tyres regardless of the current rain status.
+For Montreal, there was only rain in 13 of the 90 recorded laps. For Hungary, the rain wasn't severe enough to switch off standard soft tyres. For Spa, the rain was so heavy that everyone had to use intermediate tyres regardless of the current rain status.
 
 ## Overlapping Histograms for Lap Times by Circuit Type
 
