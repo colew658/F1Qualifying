@@ -60,6 +60,28 @@ lap_data <- do.call(rbind, lap_data_list)
 #   )
 ```
 
+```{r driverinfo}
+#| message: false
+# Get driver information for all qualifying sessions
+driver_data_list <- list()
+i <- 1
+
+for (x in session_keys) {
+  driver_data_list[[i]] <- fromJSON(content(GET(
+    paste0("https://api.openf1.org/v1/drivers?session_key=", x)), 'text'))
+  
+  i <- i + 1
+  Sys.sleep(0.1)
+}
+
+driver_data <- do.call(rbind, driver_data_list)
+
+write_csv(
+   driver_data,
+   "../Data/driver_data.csv"
+   )
+```
+
 ```{r allweather}
 # Get weather data for all qualifying sessions
 weather_data_list <- list()
