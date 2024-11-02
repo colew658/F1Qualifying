@@ -23,6 +23,7 @@ session_data <- read_csv("../Data/session_data.csv")
 lap_data <- read_csv("../Data/lap_data.csv")
 weather_data <- read_csv("../Data/weather_data.csv")
 track_data <- read_csv("../Data/List_of_Formula_One_circuits_2.csv")
+driver_data <- read_csv("../Data/driver_data.csv")
 ```
 
 ## Join Session and Track Data
@@ -63,7 +64,7 @@ full_session_track <- left_join(
   select(-LAST_LENGTH_USED)
 ```
 
-## Join Lap and Weather Data
+## Join Lap, Weather, and Driver Data
 
 ```{r lap_weather_join}
 # Round the time for both datasets to the nearest minute
@@ -83,13 +84,24 @@ lap_weather <- left_join(
   # Remove duplicate columns
   select(-c(SESSION_KEY_Y, MEETING_KEY_Y)) %>%
   rename(MEETING_KEY = MEETING_KEY_X, SESSION_KEY = SESSION_KEY_X)
+
+# Format driver data
+driver_data <- driver_data %>%
+  clean_names(case = "all_caps")
+
+# Join driver data by driver number, session key, and meeting key
+lap_weather_driver <- left_join(
+  lap_weather, driver_data
+) %>%
+  # Remove driver country code
+  select(-COUNTRY_CODE)
 ```
 
 ## Join All Data
 
 ```{r final_join}
 full_data <- full_join(
-  lap_weather, full_session_track, by = join_by(MEETING_KEY, SESSION_KEY)
+  lap_weather_driver, full_session_track, by = join_by(MEETING_KEY, SESSION_KEY)
   ) %>%
   # Fix duplicate column naming issue
   rename(
@@ -99,7 +111,8 @@ full_data <- full_join(
   # Remove unneccessary columns
   select(
     -c(IS_PIT_OUT_LAP, SEGMENTS_SECTOR_1, SEGMENTS_SECTOR_2, SEGMENTS_SECTOR_3,
-       COUNTRY_KEY, COUNTRY_CODE, CIRCUIT_KEY)
+       COUNTRY_KEY, COUNTRY_CODE, CIRCUIT_KEY, BROADCAST_NAME, NAME_ACRONYM,
+       TEAM_NAME, TEAM_COLOUR, FIRST_NAME, LAST_NAME, HEADSHOT_URL)
     )
 
 ```
@@ -121,22 +134,12 @@ full_no_missing <- kNN(full_weather, imp_var = F)
 
 ```
 
-## Data Typing
+## Save Final Dataset
 
-```{r typing}
-full_clean_types <- full_no_missing %>%
-  # Automatic conversion
-  type_convert() %>%
-  # Convert some numeric variables to factors
-  mutate(
-    MEETING_KEY = as.factor(MEETING_KEY),
-    SESSION_KEY = as.factor(SESSION_KEY),
-    DRIVER_NUMBER = as.factor(DRIVER_NUMBER),
-    RAINFALL = as.factor(RAINFALL)
-  )
+```{r savefinal}
 
-# write_csv(
-#   full_clean_types,
-#   "../Data/full_clean_types.csv"
-#   )
+write_csv(
+ full_no_missing,
+ "../Data/full_no_missing.csv"
+ )
 ```
