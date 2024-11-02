@@ -1,0 +1,23 @@
+---
+title: "F1 Project Data Modeling"
+author: "Cole Wagner"
+format:
+  html:
+    toc: true
+    self-contained: true
+    code-fold: true
+    code-line-numbers: true
+    code-tools: true
+    cache: true
+    theme: "yeti"
+editor: visual
+---
+
+```{r setup}
+library(tidyverse)
+library(tidymodels)
+library(janitor)
+
+full_data <- read.csv("../Data/full_clean_types.csv") %>%
+  type_convert(.)
+```
