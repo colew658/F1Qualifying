@@ -17,6 +17,7 @@ editor: visual
 library(tidyverse)
 library(tidymodels)
 library(janitor)
+set.seed(1)
 
 full_no_missing <- read_csv("../Data/full_no_missing.csv")
 
@@ -53,6 +54,53 @@ modeling_data <- left_join(full_clean_types, avg_time_summary) %>%
   
 ```
 
+# Base Model Pipeline
+
+```{r basemodel}
+# Create train/test split
+f1_split <- initial_split(modeling_data, strata = "TIME_DIFF")
+f1_train <- training(f1_split)
+f1_test <- testing(f1_split)
+
+
+base_rec <- recipe(TIME_DIFF ~ ., data = f1_train) %>%
+  step_normalize(all_numeric_predictors()) %>%
+  step_dummy(all_nominal_predictors(), one_hot = F)
+
+#Choose repeated 10-fold CV
+kfold_rep <- vfold_cv(f1_train, v = 10, repeats = 5, strata = "TIME_DIFF")
+
+# Create linear regression model framework
+f1_lm <- linear_reg() %>% 
+  set_engine("lm") %>%
+  set_mode("regression")
+
+# Build the modeling workflow
+lm_workflow <- workflow() %>%
+  add_model(f1_lm) %>%
+  add_recipe(base_rec)
+
+# Fit the model according to different loss functions and see the results
+lm_workflow %>% 
+  last_fit(f1_split, metrics = metric_set(rmse, mae)) %>% 
+  collect_metrics()
+
+# Resampled error rate
+fit_resamples(
+  lm_workflow,
+  resamples = kfold_rep,
+  metrics = metric_set(rmse, mae)
+) %>%
+  collect_metrics()
+
+# Extract coefficients
+lm_coefs <- lm_workflow %>%
+  fit(f1_train) %>%
+  extract_fit_parsnip() %>%
+  tidy()
+
+
+```
 
 
 
