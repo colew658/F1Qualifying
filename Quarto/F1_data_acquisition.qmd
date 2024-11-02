@@ -76,10 +76,10 @@ for (x in session_keys) {
 
 driver_data <- do.call(rbind, driver_data_list)
 
-write_csv(
-   driver_data,
-   "../Data/driver_data.csv"
-   )
+# write_csv(
+#    driver_data,
+#    "../Data/driver_data.csv"
+#    )
 ```
 
 ```{r allweather}
