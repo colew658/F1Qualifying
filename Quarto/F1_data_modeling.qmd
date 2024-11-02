@@ -18,6 +18,16 @@ library(tidyverse)
 library(tidymodels)
 library(janitor)
 
-full_data <- read.csv("../Data/full_clean_types.csv") %>%
-  type_convert(.)
+full_no_missing <- read_csv("../Data/full_no_missing.csv")
+
+full_clean_types <- full_no_missing %>%
+  # Automatic conversion
+  type_convert() %>%
+  # Convert some numeric variables to factors
+  mutate(
+    MEETING_KEY = as.factor(MEETING_KEY),
+    SESSION_KEY = as.factor(SESSION_KEY),
+    DRIVER_NUMBER = as.factor(DRIVER_NUMBER),
+    RAINFALL = as.factor(RAINFALL)
+  )
 ```
