@@ -138,8 +138,8 @@ full_no_missing <- kNN(full_weather, imp_var = F)
 
 ```{r savefinal}
 
-write_csv(
- full_no_missing,
- "../Data/full_no_missing.csv"
- )
+# write_csv(
+#  full_no_missing,
+#  "../Data/full_no_missing.csv"
+#  )
 ```
