@@ -75,18 +75,31 @@ lm_workflow <- workflow() %>%
   add_recipe(base_rec)
 
 # Resampled error rate
-fit_resamples(
+lm_res <- fit_resamples(
   lm_workflow,
   resamples = kfold_rep,
   metrics = metric_set(rmse, mae)
-) %>%
-  collect_metrics()
+)
+
+lm_res %>% collect_metrics()
 
 # Extract coefficients
 lm_coefs <- lm_workflow %>%
   fit(modeling_data) %>%
   extract_fit_parsnip() %>%
   tidy()
+```
+
+# Check assumptions
+
+```{r lmassumptions}
+lm_native <- extract_fit_engine(fit(lm_workflow, modeling_data))
+
+plot(lm_native)
+
+for (x in modeling_data[, -c(4, 8, 11)]) {
+  plot(x, y = modeling_data$TIME_DIFF)
+}
 ```
 
 # Unsupervised variable selection
@@ -101,12 +114,3 @@ prep(varselect_rec)
 
 
 ```
-
-
-
-
-
-
-
-
-
