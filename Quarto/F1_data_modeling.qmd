@@ -37,7 +37,7 @@ full_clean_types <- full_no_missing %>%
 
 The outcome variable is the difference between the actual lap time and the average lap time (given the track).
 
-```{r OutcomeEngineer}
+```{r outcomeengineer}
 # Find the average lap time for each track
 avg_time_summary <- full_clean_types %>%
   group_by(CIRCUIT_SHORT_NAME) %>%
@@ -57,18 +57,12 @@ modeling_data <- left_join(full_clean_types, avg_time_summary) %>%
 # Base Model Pipeline
 
 ```{r basemodel}
-# Create train/test split
-f1_split <- initial_split(modeling_data, strata = "TIME_DIFF")
-f1_train <- training(f1_split)
-f1_test <- testing(f1_split)
-
-
-base_rec <- recipe(TIME_DIFF ~ ., data = f1_train) %>%
+base_rec <- recipe(TIME_DIFF ~ ., data = modeling_data) %>%
   step_normalize(all_numeric_predictors()) %>%
   step_dummy(all_nominal_predictors(), one_hot = F)
 
 #Choose repeated 10-fold CV
-kfold_rep <- vfold_cv(f1_train, v = 10, repeats = 5, strata = "TIME_DIFF")
+kfold_rep <- vfold_cv(modeling_data, v = 10, repeats = 5, strata = "TIME_DIFF")
 
 # Create linear regression model framework
 f1_lm <- linear_reg() %>% 
@@ -80,11 +74,6 @@ lm_workflow <- workflow() %>%
   add_model(f1_lm) %>%
   add_recipe(base_rec)
 
-# Fit the model according to different loss functions and see the results
-lm_workflow %>% 
-  last_fit(f1_split, metrics = metric_set(rmse, mae)) %>% 
-  collect_metrics()
-
 # Resampled error rate
 fit_resamples(
   lm_workflow,
@@ -95,12 +84,25 @@ fit_resamples(
 
 # Extract coefficients
 lm_coefs <- lm_workflow %>%
-  fit(f1_train) %>%
+  fit(modeling_data) %>%
   extract_fit_parsnip() %>%
   tidy()
+```
+
+# Unsupervised variable selection
+
+```{r varselect}
+varselect_rec <- recipe(TIME_DIFF ~ ., data = modeling_data) %>%
+  step_normalize(all_numeric_predictors()) %>%
+  step_dummy(all_nominal_predictors(), one_hot = F) %>%
+  step_corr(all_numeric_predictors())
+
+prep(varselect_rec)
 
 
 ```
+
+
 
 
 
