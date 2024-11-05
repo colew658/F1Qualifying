@@ -33,13 +33,33 @@ full_clean_types <- full_no_missing %>%
   )
 ```
 
+# Apply the 107% rule to filter out "non-hot" laps
+
+```{r filter107}
+# Create a column to show if there was rain at any point in the session
+# Also, find the cutoff time for each session
+rain_cutoff <- full_clean_types %>%
+  # Filter out any sessions that had rain
+  group_by(SESSION_KEY) %>%
+  summarise(
+    rain_laps = sum(RAINFALL == 1),
+    cutoff = min(LAP_DURATION) * 1.07
+  ) %>%
+  ungroup()
+
+full_eng <- left_join(full_clean_types, rain_cutoff) %>%
+  filter(LAP_DURATION < cutoff)
+  
+```
+
+
 # Engineering the Outcome
 
 The outcome variable is the difference between the actual lap time and the average lap time (given the track).
 
 ```{r outcomeengineer}
 # Find the average lap time for each track
-avg_time_summary <- full_clean_types %>%
+avg_time_summary <- full_eng %>%
   group_by(CIRCUIT_SHORT_NAME) %>%
   summarise(
     AVG_LAP_DURATION = mean(LAP_DURATION)
@@ -47,11 +67,10 @@ avg_time_summary <- full_clean_types %>%
   ungroup()
 
 # Create the outcome TIME_DIFF
-modeling_data <- left_join(full_clean_types, avg_time_summary) %>%
+modeling_data <- left_join(full_eng, avg_time_summary) %>%
   mutate(TIME_DIFF = LAP_DURATION - AVG_LAP_DURATION) %>%
   # Keep only the variables needed for modeling
-  select(c(13:19, 23, 33:34, 36))
-  
+  select(c(13:19, 23, 33:35, 38))
 ```
 
 # Base Model Pipeline
@@ -102,6 +121,7 @@ for (x in modeling_data[, -c(4, 8, 11)]) {
 }
 ```
 
+
 # Unsupervised variable selection
 
 ```{r varselect}
@@ -111,6 +131,4 @@ varselect_rec <- recipe(TIME_DIFF ~ ., data = modeling_data) %>%
   step_corr(all_numeric_predictors())
 
 prep(varselect_rec)
-
-
 ```
