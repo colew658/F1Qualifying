@@ -120,15 +120,3 @@ for (x in modeling_data[, -c(4, 8, 11)]) {
   plot(x, y = modeling_data$TIME_DIFF)
 }
 ```
-
-
-# Unsupervised variable selection
-
-```{r varselect}
-varselect_rec <- recipe(TIME_DIFF ~ ., data = modeling_data) %>%
-  step_normalize(all_numeric_predictors()) %>%
-  step_dummy(all_nominal_predictors(), one_hot = F) %>%
-  step_corr(all_numeric_predictors())
-
-prep(varselect_rec)
-```
