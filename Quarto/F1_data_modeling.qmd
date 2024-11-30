@@ -105,7 +105,21 @@ lm_native <- extract_fit_engine(fit(lm_workflow, modeling_data))
 
 plot(lm_native)
 
-for (x in modeling_data[, -c(4, 8, 11)]) {
-  plot(x, y = modeling_data$LAP_DURATION)
+# Normality is not great, but a log transformation makes it worse.
+hist(modeling_data$LAP_DURATION)
+hist(log(modeling_data$LAP_DURATION))
+
+i = 1
+for (x in modeling_data[, -8]) {
+  plot(x = x, y = modeling_data$LAP_DURATION,
+       xlab = colnames(modeling_data[, -8])[i])
+  i = i + 1
 }
 ```
+
+
+
+
+
+
+
