@@ -52,36 +52,25 @@ full_eng <- left_join(full_clean_types, rain_cutoff) %>%
   
 ```
 
+# Get Final Modeling Data
 
-# Engineering the Outcome
+Select only the variables that will be used in the model.
 
-The outcome variable is the difference between the actual lap time and the average lap time (given the track).
-
-```{r outcomeengineer}
-# Find the average lap time for each track
-avg_time_summary <- full_eng %>%
-  group_by(CIRCUIT_SHORT_NAME) %>%
-  summarise(
-    AVG_LAP_DURATION = mean(LAP_DURATION)
-  ) %>%
-  ungroup()
-
-# Create the outcome TIME_DIFF
-modeling_data <- left_join(full_eng, avg_time_summary) %>%
-  mutate(TIME_DIFF = LAP_DURATION - AVG_LAP_DURATION) %>%
+```{r modeldat}
+modeling_data <- full_eng %>%
   # Keep only the variables needed for modeling
-  select(c(13:19, 23, 33:35, 38))
+  select(c(8, 13:17, 19, 23, 33:35))
 ```
 
 # Base Model Pipeline
 
 ```{r basemodel}
-base_rec <- recipe(TIME_DIFF ~ ., data = modeling_data) %>%
+base_rec <- recipe(LAP_DURATION ~ ., data = modeling_data) %>%
   step_normalize(all_numeric_predictors()) %>%
   step_dummy(all_nominal_predictors(), one_hot = F)
 
 #Choose repeated 10-fold CV
-kfold_rep <- vfold_cv(modeling_data, v = 10, repeats = 5, strata = "TIME_DIFF")
+kfold_rep <- vfold_cv(modeling_data, v = 10, repeats = 5, strata = "LAP_DURATION")
 
 # Create linear regression model framework
 f1_lm <- linear_reg() %>% 
@@ -97,7 +86,7 @@ lm_workflow <- workflow() %>%
 lm_res <- fit_resamples(
   lm_workflow,
   resamples = kfold_rep,
-  metrics = metric_set(rmse, mae)
+  metrics = metric_set(rmse, mae, rsq)
 )
 
 lm_res %>% collect_metrics()
@@ -117,6 +106,6 @@ lm_native <- extract_fit_engine(fit(lm_workflow, modeling_data))
 plot(lm_native)
 
 for (x in modeling_data[, -c(4, 8, 11)]) {
-  plot(x, y = modeling_data$TIME_DIFF)
+  plot(x, y = modeling_data$LAP_DURATION)
 }
 ```
