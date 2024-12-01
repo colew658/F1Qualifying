@@ -25,6 +25,8 @@ library(bayesplot)
 library(rstan)
 library(shinystan)
 library(broom.mixed)
+library(ranger)
+library(finetune)
 set.seed(1)
 
 full_no_missing <- read_csv("../Data/full_no_missing.csv")
@@ -75,6 +77,8 @@ modeling_data <- full_eng %>%
 base_rec <- recipe(LAP_DURATION ~ ., data = modeling_data) %>%
   step_normalize(all_numeric_predictors()) %>%
   step_dummy(all_nominal_predictors(), one_hot = F)
+
+base_juice <- juice(prep(base_rec))
 
 # Choose repeated 10-fold CV
 kfold_rep <- vfold_cv(modeling_data, v = 10, repeats = 2, strata = "LAP_DURATION")
@@ -148,8 +152,8 @@ randint_wf <- workflow() %>%
   add_recipe(randint_rec) %>%
   # Need to specify formula for the model
   add_model(glmer_mod, formula = LAP_DURATION ~ AIR_TEMPERATURE + HUMIDITY +
-              PRESSURE + RAINFALL_X1 + TRACK_TEMPERATURE + WIND_SPEED + TURNS +
-              LENGTH_KM + rain_laps + (1 | CIRCUIT_SHORT_NAME))
+    PRESSURE + RAINFALL_X1 + TRACK_TEMPERATURE + WIND_SPEED + TURNS +
+    LENGTH_KM + rain_laps + (1 | CIRCUIT_SHORT_NAME))
 
 # Resampled error rate
 # randint_res <- fit_resamples(
@@ -167,7 +171,54 @@ randint_res %>% collect_metrics()
 # saveRDS(randint_extract, "../Data/randint_extract.rds")
 randint_extract <- readRDS("../Data/randint_extract.rds")
 
-launch_shinystan(randint_extract)
+# launch_shinystan(randint_extract)
+```
+
+After examining diagnostics via shinystan, the assumptions seem to be met.
+
+# Tree-Based Methods
+
+## Random Forest
+```{r ranger}
+# Create a random forest model
+rf_mod <- rand_forest(
+  trees = tune(),
+  mtry = tune(),
+  min_n = tune()
+) %>%
+  set_mode("regression") %>%
+  set_engine("ranger", num.threads = 7)
+
+rf_wf <- workflow() %>%
+  add_recipe(base_rec) %>%
+  add_model(rf_mod)
+
+# Create a grid of tuning parameters
+rf_param <- extract_parameter_set_dials(rf_mod) %>%
+  update(mtry = mtry(c(1, 32)))
+
+rf_tunegrid <- grid_space_filling(rf_param, size = 5)
+
+# Tune the model
+# rf_tune <- tune_race_anova(
+#   rf_wf,
+#   resamples = kfold_rep,
+#   grid = rf_tunegrid,
+#   metrics = metric_set(rmse, mae, rsq)
+# )
+# 
+# saveRDS(rf_tune, "../Data/rf_tune.rds")
+rf_tune <- readRDS("../Data/rf_tune.rds")
+
+rf_besttune <- select_best(rf_tune, metric = "rmse")
+
+rf_finalmod <- finalize_model(rf_mod, rf_besttune)
+
+rf_finalwf <- workflow() %>%
+  add_recipe(base_rec) %>%
+  add_model(rf_finalmod)
+
+rf_tune %>% show_best(metric = "rmse")
 ```
 
 
