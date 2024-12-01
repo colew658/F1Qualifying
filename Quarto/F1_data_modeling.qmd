@@ -27,6 +27,7 @@ library(shinystan)
 library(broom.mixed)
 library(ranger)
 library(finetune)
+library(xgboost)
 set.seed(1)
 
 full_no_missing <- read_csv("../Data/full_no_missing.csv")
@@ -206,7 +207,7 @@ rf_tunegrid <- grid_space_filling(rf_param, size = 5)
 #   grid = rf_tunegrid,
 #   metrics = metric_set(rmse, mae, rsq)
 # )
-# 
+#
 # saveRDS(rf_tune, "../Data/rf_tune.rds")
 rf_tune <- readRDS("../Data/rf_tune.rds")
 
@@ -221,8 +222,48 @@ rf_finalwf <- workflow() %>%
 rf_tune %>% show_best(metric = "rmse")
 ```
 
+## XGBoost
+```{r xgb}
+xgb_mod <- boost_tree(
+  mode = "regression",
+  mtry = tune(),
+  trees = tune(),
+  min_n = tune(),
+  tree_depth = tune(),
+  learn_rate = tune(),
+  loss_reduction = tune(),
+  sample_size = tune(),
+  stop_iter = tune()
+) %>%
+  set_engine("xgboost", num.threads = 7)
+
+xgb_param <- extract_parameter_set_dials(xgb_mod) %>%
+  update(mtry = mtry(c(1, 32)))
+
+xgb_tunegrid <- grid_space_filling(xgb_param, size = 5)
+
+xgb_wf <- workflow() %>%
+  add_recipe(base_rec) %>%
+  add_model(xgb_mod)
 
 
+# xgb_tune <- tune_race_anova(
+#   xgb_wf,
+#   resamples = kfold_rep,
+#   grid = xgb_tunegrid,
+#   metrics = metric_set(rmse, mae, rsq)
+# )
+# 
+# saveRDS(xgb_tune, "../Data/xgb_tune.rds")
+xgb_tune <- readRDS("../Data/xgb_tune.rds")
 
+xgb_besttune <- select_best(xgb_tune, metric = "rmse")
 
+xgb_finalmod <- finalize_model(xgb_mod, xgb_besttune)
 
+xgb_finalwf <- workflow() %>%
+  add_recipe(base_rec) %>%
+  add_model(xgb_finalmod)
+
+xgb_tune %>% show_best(metric = "rmse")
+```
