@@ -28,6 +28,8 @@ library(broom.mixed)
 library(ranger)
 library(finetune)
 library(xgboost)
+library(kableExtra)
+library(iml)
 set.seed(1)
 
 full_no_missing <- read_csv("../Data/full_no_missing.csv")
@@ -219,7 +221,9 @@ rf_finalwf <- workflow() %>%
   add_recipe(base_rec) %>%
   add_model(rf_finalmod)
 
-rf_tune %>% show_best(metric = "rmse")
+rbind(rf_tune %>% show_best(metric = "rmse"),
+rf_tune %>% show_best(metric = "mae"),
+rf_tune %>% show_best(metric = "rsq"))
 ```
 
 ## XGBoost
@@ -265,5 +269,100 @@ xgb_finalwf <- workflow() %>%
   add_recipe(base_rec) %>%
   add_model(xgb_finalmod)
 
-xgb_tune %>% show_best(metric = "rmse")
+rbind(xgb_tune %>% show_best(metric = "rmse"),
+xgb_tune %>% show_best(metric = "mae"),
+xgb_tune %>% show_best(metric = "rsq"))
 ```
+
+# Model Evaluation
+```{r modeleval}
+# format all metrics tables
+lm_metrics <- lm_res %>%
+  collect_metrics() %>%
+  select(.metric, mean, std_err) %>%
+  pivot_longer(-1) %>%
+  pivot_wider(names_from = 1, values_from = value) %>%
+  mutate(Model = c("Base Linear Regression (mean)", "Base Linear Regression (std)"), .before = name) %>%
+  select(-name)
+
+randint_metrics <- randint_res %>%
+  collect_metrics() %>%
+  select(.metric, mean, std_err) %>%
+  pivot_longer(-1) %>%
+  pivot_wider(names_from = 1, values_from = value) %>%
+  mutate(Model = c("Bayesian LR w/ Random Intercept (mean)", "Bayesian LR w/ Random Intercept (std)"), .before = name) %>%
+  select(-name)
+
+rf_metrics <- rbind(rf_tune %>% show_best(metric = "rmse"),
+rf_tune %>% show_best(metric = "mae"),
+rf_tune %>% show_best(metric = "rsq")) %>%
+  select(.metric, mean, std_err) %>%
+  pivot_longer(-1) %>%
+  pivot_wider(names_from = 1, values_from = value) %>%
+  mutate(Model = c("Random Forest (mean)", "Random Forest (std)"), .before = name) %>%
+  select(-name)
+
+xgb_metrics <- rbind(xgb_tune %>% show_best(metric = "rmse"),
+xgb_tune %>% show_best(metric = "mae"),
+xgb_tune %>% show_best(metric = "rsq")) %>%
+  select(.metric, mean, std_err) %>%
+  pivot_longer(-1) %>%
+  pivot_wider(names_from = 1, values_from = value) %>%
+  mutate(Model = c("XGBoost (mean)", "XGBoost (std)"), .before = name) %>%
+  select(-name)
+
+# combine all metrics tables and create a kable object
+comb_metrics <- rbind(lm_metrics, randint_metrics, rf_metrics, xgb_metrics) %>%
+  rename(RMSE = rmse, MAE = mae, Rsquared = rsq)
+
+metrics_table <- kable(comb_metrics, digits = 3) %>%
+  kable_styling(bootstrap_options = "striped", full_width = F)
+metrics_table
+
+```
+
+Because the random forest model is best, I will further examine this model.
+
+# Random Forest Examination
+
+## Variable Importance Plot
+```{r impplot}
+# Native random forest model
+rf_extract <- extract_fit_engine(rf_finalwf %>% fit(modeling_data))
+
+# Create prediction function
+pfun_ranger <- function(object, newdata) predict(object, data = newdata)$predictions
+
+# Create a base iml object that is needed before generating additional plots
+predictor_ranger <- Predictor$new(model = rf_extract, 
+                                  data = base_juice[,-c(9)], 
+                                  y = base_juice[,9], predict.fun = pfun_ranger)
+
+# imp_rf <- FeatureImp$new(predictor_ranger, loss = "rmse")
+# saveRDS(imp_rf, "../Data/imp_rf.rds")
+imp_rf <- readRDS("../Data/imp_rf.rds")
+plot(imp_rf)
+```
+
+## ALE Plots
+```{r ale}
+rf_ale_length <- FeatureEffect$new(predictor_ranger, feature = "LENGTH_KM", method='ale')
+rf_ale_length$plot()
+
+rf_ale_turns <- FeatureEffect$new(predictor_ranger, feature = "TURNS", method='ale')
+rf_ale_turns$plot()
+
+rf_ale_humidity <- FeatureEffect$new(predictor_ranger, feature = "HUMIDITY", method='ale')
+rf_ale_humidity$plot()
+
+rf_ale_pressure <- FeatureEffect$new(predictor_ranger, feature = "PRESSURE", method='ale')
+rf_ale_pressure$plot()
+```
+
+
+
+
+
+
+
+
