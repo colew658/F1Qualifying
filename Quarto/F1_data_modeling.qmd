@@ -17,6 +17,14 @@ editor: visual
 library(tidyverse)
 library(tidymodels)
 library(janitor)
+library(rstanarm)
+library(multilevelmod)
+library(loo)
+library(zoo)
+library(bayesplot)
+library(rstan)
+library(shinystan)
+library(broom.mixed)
 set.seed(1)
 
 full_no_missing <- read_csv("../Data/full_no_missing.csv")
@@ -49,7 +57,6 @@ rain_cutoff <- full_clean_types %>%
 
 full_eng <- left_join(full_clean_types, rain_cutoff) %>%
   filter(LAP_DURATION < cutoff)
-  
 ```
 
 # Get Final Modeling Data
@@ -69,11 +76,11 @@ base_rec <- recipe(LAP_DURATION ~ ., data = modeling_data) %>%
   step_normalize(all_numeric_predictors()) %>%
   step_dummy(all_nominal_predictors(), one_hot = F)
 
-#Choose repeated 10-fold CV
-kfold_rep <- vfold_cv(modeling_data, v = 10, repeats = 5, strata = "LAP_DURATION")
+# Choose repeated 10-fold CV
+kfold_rep <- vfold_cv(modeling_data, v = 10, repeats = 2, strata = "LAP_DURATION")
 
 # Create linear regression model framework
-f1_lm <- linear_reg() %>% 
+f1_lm <- linear_reg() %>%
   set_engine("lm") %>%
   set_mode("regression")
 
@@ -109,14 +116,59 @@ plot(lm_native)
 hist(modeling_data$LAP_DURATION)
 hist(log(modeling_data$LAP_DURATION))
 
-i = 1
+i <- 1
 for (x in modeling_data[, -8]) {
-  plot(x = x, y = modeling_data$LAP_DURATION,
-       xlab = colnames(modeling_data[, -8])[i])
-  i = i + 1
+  plot(
+    x = x, y = modeling_data$LAP_DURATION,
+    xlab = colnames(modeling_data[, -8])[i]
+  )
+  i <- i + 1
 }
 ```
 
+After looking at these plots, it appears that OLS linear regression is not the most appropriate model type for this data. Most of the predictors do not appear to be linearly related to the outcome, and the assumptions, especially the normality assumption, is shaky. As a result, I want to try two other frameworks: A Bayesian linear regression with random intercepts, and tree-based methods (random forest and xgboost). I do not want to throw out the results from the OLS regression, though, because the model is overall very good and has consistent performance across folds. As a result, I don't see these results as invalid.
+
+# Bayesian Linear Regression with Random Intercepts
+Based on the fact that each track is so unique, my background knowledge leads me to believe that a random intercept for each track could improve model performance.
+
+```{r bayes}
+randint_rec <- recipe(LAP_DURATION ~ ., data = modeling_data) %>%
+  # This adds random intercept for circuit
+  add_role(CIRCUIT_SHORT_NAME, new_role = "exp_unit") %>%
+  step_normalize(all_numeric_predictors(), -has_role("exp_unit")) %>%
+  step_dummy(all_nominal_predictors(), -has_role("exp_unit"))
+
+# Set up the Bayesian engine and priors
+glmer_mod <- linear_reg() %>%
+  set_engine("stan_glmer",
+    cores = 4
+  )
+
+randint_wf <- workflow() %>%
+  add_recipe(randint_rec) %>%
+  # Need to specify formula for the model
+  add_model(glmer_mod, formula = LAP_DURATION ~ AIR_TEMPERATURE + HUMIDITY +
+              PRESSURE + RAINFALL_X1 + TRACK_TEMPERATURE + WIND_SPEED + TURNS +
+              LENGTH_KM + rain_laps + (1 | CIRCUIT_SHORT_NAME))
+
+# Resampled error rate
+# randint_res <- fit_resamples(
+#   randint_wf,
+#   resamples = kfold_rep,
+#   metrics = metric_set(rmse, mae, rsq)
+# )
+# saveRDS(randint_res, "../Data/randint_res.rds")
+randint_res <- readRDS("../Data/randint_res.rds")
+# Look at performance metrics
+randint_res %>% collect_metrics()
+
+# Extract native model fit
+# randint_extract <- extract_fit_engine(randint_wf %>% fit(modeling_data))
+# saveRDS(randint_extract, "../Data/randint_extract.rds")
+randint_extract <- readRDS("../Data/randint_extract.rds")
+
+launch_shinystan(randint_extract)
+```
 
 
 
