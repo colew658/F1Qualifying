@@ -22,16 +22,13 @@ ui <- page_navbar(
                 numericInput("windspeed", "Wind Speed (m/s):", value = 0),
                 numericInput("rainlaps", "# of Raining Laps:", value = 0)
               ),
-              layout_column_wrap(
-                width = 1/2,
-                card(
-                  card_header("Model Prediction"),
-                  textOutput("prediction_value")
-                ),
-                card(
-                  card_header("Feature Importance"),
-                  plotOutput("importance_plot")
-                )
+              card(
+                card_header("Model Prediction"),
+                textOutput("prediction_value")
+              ),
+              card(
+                card_header("Feature Importance"),
+                plotOutput("importance_plot")
               )
             )
   ),
@@ -75,7 +72,7 @@ server <- function(input, output) {
   
   # Prediction output
   output$prediction_value <- renderText({
-    paste("Predicted Lap Time:", round(prediction(), 3))
+    paste("Predicted Lap Time (s):", round(prediction(), 3))
   })
   
   # Variable importance plot
