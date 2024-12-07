@@ -406,15 +406,15 @@ weatheronly_tunegrid <- grid_space_filling(weatheronly_param, size = 5)
 weatheronly_rep <- vfold_cv(weatheronly_data, v = 10, repeats = 2, strata = "LAP_DURATION")
 
 # Tune the model
-weatheronly_tune <- tune_race_anova(
-  weatheronly_wf,
-  resamples = weatheronly_rep,
-  grid = weatheronly_tunegrid,
-  metrics = metric_set(yardstick::rmse, yardstick::mae, yardstick::rsq)
-)
+# weatheronly_tune <- tune_race_anova(
+#   weatheronly_wf,
+#   resamples = weatheronly_rep,
+#   grid = weatheronly_tunegrid,
+#   metrics = metric_set(yardstick::rmse, yardstick::mae, yardstick::rsq)
+# )
 
 # saveRDS(weatheronly_tune, "../Data/weatheronly_tune.rds")
-# weatheronly_tune <- readRDS("../Data/weatheronly_tune.rds")
+weatheronly_tune <- readRDS("../Data/weatheronly_tune.rds")
 
 weatheronly_besttune <- select_best(weatheronly_tune, metric = "rmse")
 
@@ -441,9 +441,9 @@ predictor_ranger <- Predictor$new(model = weatheronly_extract,
                                   data = weatheronly_juice[, -7], 
                                   y = base_juice[, 7], predict.fun = pfun_ranger)
 
-imp_weatheronly <- FeatureImp$new(predictor_ranger, loss = "rmse")
+# imp_weatheronly <- FeatureImp$new(predictor_ranger, loss = "rmse")
 # saveRDS(imp_weatheronly, "../Data/imp_weatheronly.rds")
-# imp_weatheronly <- readRDS("../Data/imp_weatheronly.rds")
+imp_weatheronly <- readRDS("../Data/imp_weatheronly.rds")
 plot(imp_weatheronly)
 ```
 
