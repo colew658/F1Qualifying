@@ -35,7 +35,10 @@ ui <- page_navbar(
                 card(
                   card_header("ALE Plot"),
                   selectInput("ale_feature", "Select Feature:", 
-                              choices = paste0("x", 1:7)),
+                              choices = c("Air Temperature", "Humidity",
+                                          "Pressure", "Rainfall",
+                                          "Track Temperature", "Wind Speed",
+                                          "# of Raining Laps")),
                   plotOutput("ale_plot")
                 )
               )
@@ -93,11 +96,26 @@ server <- function(input, output) {
   
   # ALE plot
   output$ale_plot <- renderPlot({
-    effect <- FeatureEffect$new(predictor, feature = input$ale_feature, method = "ale")
-    plot(effect) +
+    if (input$ale_feature == "Air Temperature") {
+      aleplot <- readRDS("Data/airtemp_ale.rds")
+    } else if (input$ale_feature == "Humidity") {
+      aleplot <- readRDS("Data/humidity_ale.rds")
+    } else if (input$ale_feature == "Pressure") {
+      aleplot <- readRDS("Data/pressure_ale.rds")
+    } else if (input$ale_feature == "Rainfall") {
+      aleplot <- readRDS("Data/rainfall_ale.rds")
+    } else if (input$ale_feature == "Track Temperature") {
+      aleplot <- readRDS("Data/tracktemp_ale.rds")
+    } else if (input$ale_feature == "Wind Speed") {
+      aleplot <- readRDS("Data/windspeed_ale.rds")
+    } else if (input$ale_feature == "# of Raining Laps") {
+      aleplot <- readRDS("Data/rainlaps_ale.rds")
+    }
+    
+    plot(aleplot) +
+      labs(x = input$ale_feature, y = "ALE of Lap Duration") +
       theme_minimal() +
-      labs(title = paste("ALE Plot for", input$ale_feature),
-           y = "Effect on Prediction")
+      theme(axis.text = element_text(size = 12))
   })
   
   # Variable summary table
