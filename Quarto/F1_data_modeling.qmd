@@ -630,8 +630,11 @@ best_laps <- full_preds %>%
   head(n = 20) %>%
   # Select only relevant variables
   select(8, 13:17, 19:20, 23, 29, 37:38) %>%
-  # Move actual lap time next to predicted for ease of comparison
+  # Move columns around for ease of comparison
   relocate(LAP_DURATION, .after = YEAR) %>%
+  relocate(FULL_NAME, .before = AIR_TEMPERATURE) %>%
+  relocate(CIRCUIT_SHORT_NAME, .after = FULL_NAME) %>%
+  relocate(YEAR, .after = CIRCUIT_SHORT_NAME) %>%
   rename(`Air Temp (°C)` = AIR_TEMPERATURE, `Relative Humidity (%)` = HUMIDITY, 
          `Pressure (mbar)` = PRESSURE, `Rain` = RAINFALL,
          `Track Temp (°C)` = TRACK_TEMPERATURE, `Wind Speed (m/s)` = WIND_SPEED,
