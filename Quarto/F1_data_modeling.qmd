@@ -439,7 +439,7 @@ pfun_ranger <- function(object, newdata) predict(object, data = newdata)$predict
 # Create a base iml object that is needed before generating additional plots
 predictor_ranger <- Predictor$new(model = weatheronly_extract, 
                                   data = weatheronly_juice[, -7], 
-                                  y = base_juice[, 7], predict.fun = pfun_ranger)
+                                  y = weatheronly_juice[, 7], predict.fun = pfun_ranger)
 
 # imp_weatheronly <- FeatureImp$new(predictor_ranger, loss = "rmse")
 # saveRDS(imp_weatheronly, "../Data/imp_weatheronly.rds")
