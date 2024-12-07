@@ -1,8 +1,7 @@
 library(shiny)
 library(bslib)
-library(randomForest)
+library(reactable)
 library(ggplot2)
-library(DT)
 
 final_fit <- readRDS("Data/final_fit.rds")
 
@@ -45,10 +44,10 @@ ui <- page_navbar(
             )
   ),
   
-  nav_panel("Variable Summary",
+  nav_panel("Driver Summary",
             card(
-              card_header("Statistical Summary"),
-              DTOutput("var_summary")
+              card_header("Driver Summary Table"),
+              reactableOutput("driver_summary")
             )
   ),
   
@@ -118,15 +117,9 @@ server <- function(input, output) {
       theme(axis.text = element_text(size = 12))
   })
   
-  # Variable summary table
-  output$var_summary <- renderDT({
-    summary_stats <- sapply(data[,1:7], function(x) {
-      c(Mean = mean(x),
-        SD = sd(x),
-        Min = min(x),
-        Max = max(x))
-    })
-    datatable(round(summary_stats, 3))
+  # Driver summary table
+  output$driver_summary <- renderReactable({
+    readRDS("Data/driver_reactable.rds")
   })
   
   # Model performance metrics
