@@ -136,6 +136,7 @@ for (x in modeling_data[, -8]) {
 After looking at these plots, it appears that OLS linear regression is not the most appropriate model type for this data. Most of the predictors do not appear to be linearly related to the outcome, and the assumptions, especially the normality assumption, is shaky. As a result, I want to try two other frameworks: A Bayesian linear regression with random intercepts, and tree-based methods (random forest and xgboost). I do not want to throw out the results from the OLS regression, though, because the model is overall very good and has consistent performance across folds. As a result, I don't see these results as invalid.
 
 # Bayesian Linear Regression with Random Intercepts
+
 Based on the fact that each track is so unique, my background knowledge leads me to believe that a random intercept for each track could improve model performance.
 
 ```{r bayes}
@@ -182,6 +183,7 @@ After examining diagnostics via shinystan, the assumptions seem to be met.
 # Tree-Based Methods
 
 ## Random Forest
+
 ```{r ranger}
 # Create a random forest model
 rf_mod <- rand_forest(
@@ -227,6 +229,7 @@ rf_tune %>% show_best(metric = "rsq"))
 ```
 
 ## XGBoost
+
 ```{r xgb}
 xgb_mod <- boost_tree(
   mode = "regression",
@@ -275,6 +278,7 @@ xgb_tune %>% show_best(metric = "rsq"))
 ```
 
 # Model Evaluation
+
 ```{r modeleval}
 # format all metrics tables
 lm_metrics <- lm_res %>%
@@ -326,6 +330,7 @@ Because the random forest model is best, I will further examine this model.
 # Random Forest Examination
 
 ## Variable Importance Plot
+
 ```{r impplot}
 # Native random forest model
 rf_extract <- extract_fit_engine(rf_finalwf %>% fit(modeling_data))
@@ -345,6 +350,7 @@ plot(imp_rf)
 ```
 
 ## ALE Plots
+
 ```{r ale}
 rf_ale_length <- FeatureEffect$new(predictor_ranger, feature = "LENGTH_KM", method='ale')
 rf_ale_length$plot()
@@ -357,7 +363,92 @@ rf_ale_humidity$plot()
 
 rf_ale_pressure <- FeatureEffect$new(predictor_ranger, feature = "PRESSURE", method='ale')
 rf_ale_pressure$plot()
+
+rf_ale_airtemp <- FeatureEffect$new(predictor_ranger, feature = "AIR_TEMPERATURE", method='ale')
+rf_ale_airtemp$plot()
+
+rf_ale_tracktemp <- FeatureEffect$new(predictor_ranger, feature = "TRACK_TEMPERATURE", method='ale')
+rf_ale_tracktemp$plot()
 ```
+
+## Run Model With Only Weather Predictors
+
+```{r weatheronly}
+# Remove track attributes from the data
+weatheronly_data <- modeling_data[, -c(8:10)]
+
+weatheronly_rec <- recipe(LAP_DURATION ~ ., data = weatheronly_data) %>%
+  step_normalize(all_numeric_predictors()) %>%
+  step_dummy(all_nominal_predictors(), one_hot = F)
+
+weatheronly_juice <- juice(prep(weatheronly_rec))
+  
+# Create a random forest model
+weatheronly_mod <- rand_forest(
+  trees = tune(),
+  mtry = tune(),
+  min_n = tune()
+) %>%
+  set_mode("regression") %>%
+  set_engine("ranger", num.threads = 7)
+
+weatheronly_wf <- workflow() %>%
+  add_recipe(weatheronly_rec) %>%
+  add_model(weatheronly_mod)
+
+# Create a grid of tuning parameters
+weatheronly_param <- extract_parameter_set_dials(weatheronly_mod) %>%
+  update(mtry = mtry(c(1, 7)))
+
+weatheronly_tunegrid <- grid_space_filling(weatheronly_param, size = 5)
+
+# Create a new CV
+weatheronly_rep <- vfold_cv(weatheronly_data, v = 10, repeats = 2, strata = "LAP_DURATION")
+
+# Tune the model
+weatheronly_tune <- tune_race_anova(
+  weatheronly_wf,
+  resamples = weatheronly_rep,
+  grid = weatheronly_tunegrid,
+  metrics = metric_set(yardstick::rmse, yardstick::mae, yardstick::rsq)
+)
+
+# saveRDS(weatheronly_tune, "../Data/weatheronly_tune.rds")
+# weatheronly_tune <- readRDS("../Data/weatheronly_tune.rds")
+
+weatheronly_besttune <- select_best(weatheronly_tune, metric = "rmse")
+
+weatheronly_finalmod <- finalize_model(weatheronly_mod, weatheronly_besttune)
+
+weatheronly_finalwf <- workflow() %>%
+  add_recipe(weatheronly_rec) %>%
+  add_model(weatheronly_finalmod)
+
+rbind(weatheronly_tune %>% show_best(metric = "rmse"),
+weatheronly_tune %>% show_best(metric = "mae"),
+weatheronly_tune %>% show_best(metric = "rsq"))
+```
+
+```{r weatherimp}
+# Native random forest model
+weatheronly_extract <- extract_fit_engine(weatheronly_finalwf %>% fit(weatheronly_data))
+
+# Create prediction function
+pfun_ranger <- function(object, newdata) predict(object, data = newdata)$predictions
+
+# Create a base iml object that is needed before generating additional plots
+predictor_ranger <- Predictor$new(model = weatheronly_extract, 
+                                  data = weatheronly_juice[, -7], 
+                                  y = base_juice[, 7], predict.fun = pfun_ranger)
+
+imp_weatheronly <- FeatureImp$new(predictor_ranger, loss = "rmse")
+# saveRDS(imp_weatheronly, "../Data/imp_weatheronly.rds")
+# imp_weatheronly <- readRDS("../Data/imp_weatheronly.rds")
+plot(imp_weatheronly)
+```
+
+
+
 
 
 
