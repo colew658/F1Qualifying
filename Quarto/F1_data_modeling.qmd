@@ -609,6 +609,7 @@ driver_reactable <- reactable(
   striped = T,
   highlight = T,
   bordered = T,
+  defaultPageSize = 30,
   theme = reactableTheme(
     highlightColor = "#fa9696"
   )
