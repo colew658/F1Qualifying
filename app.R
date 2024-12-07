@@ -86,7 +86,9 @@ server <- function(input, output) {
   
   # Variable importance plot
   output$importance_plot <- renderPlot({
-    plot(readRDS("Data/imp_weatheronly.rds"))
+    plot(readRDS("Data/imp_weatheronly.rds")) +
+      theme_minimal() +
+      theme(axis.text = element_text(size = 12))
   })
   
   # ALE plot
