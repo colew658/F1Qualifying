@@ -4,36 +4,23 @@ library(randomForest)
 library(ggplot2)
 library(DT)
 
-# Generate example data and train model
-set.seed(123)
-n <- 1000
-data <- data.frame(
-  x1 = rnorm(n),
-  x2 = rnorm(n),
-  x3 = rnorm(n),
-  x4 = rnorm(n),
-  x5 = rnorm(n),
-  x6 = rnorm(n),
-  x7 = rnorm(n)
-)
-data$y = with(data, 2*x1 - 1.5*x2 + 0.5*x3 + 0.8*x4 - 0.3*x5 + 1.2*x6 - 0.7*x7) + rnorm(n, 0, 0.1)
-rf_model <- randomForest(y ~ ., data = data)
+final_fit <- readRDS("Data/final_fit.rds")
 
 ui <- page_navbar(
-  title = "Model Predictions Dashboard",
+  title = "F1 Qualifying Analysis Dashboard",
   theme = bs_theme(version = 5),
   
   nav_panel("Predictions",
             layout_sidebar(
               sidebar = sidebar(
                 title = "Input Parameters",
-                numericInput("x1", "X1:", value = 0),
-                numericInput("x2", "X2:", value = 0),
-                numericInput("x3", "X3:", value = 0),
-                numericInput("x4", "X4:", value = 0),
-                numericInput("x5", "X5:", value = 0),
-                numericInput("x6", "X6:", value = 0),
-                numericInput("x7", "X7:", value = 0)
+                numericInput("airtemp", "Air Temperature (°C):", value = 0),
+                numericInput("humidity", "Relative Humidity (%):", value = 0),
+                numericInput("pressure", "Pressure (mbar):", value = 0),
+                selectInput("rainfall", "Is is raining?:", choices = c("No", "Yes")),
+                numericInput("tracktemp", "Track Temperature (°C):", value = 0),
+                numericInput("windspeed", "Wind Speed (m/s):", value = 0),
+                numericInput("rainlaps", "# of Raining Laps:", value = 0)
               ),
               layout_column_wrap(
                 width = 1/2,
@@ -75,20 +62,20 @@ server <- function(input, output) {
   # Reactive prediction
   prediction <- reactive({
     new_data <- data.frame(
-      x1 = input$x1,
-      x2 = input$x2,
-      x3 = input$x3,
-      x4 = input$x4,
-      x5 = input$x5,
-      x6 = input$x6,
-      x7 = input$x7
+      AIR_TEMPERATURE = input$airtemp,
+      HUMIDITY = input$humidity,
+      PRESSURE = input$pressure,
+      RAINFALL = factor(ifelse(input$rainfall == "Yes", 1, 0)),
+      TRACK_TEMPERATURE = input$tracktemp,
+      WIND_SPEED = input$windspeed,
+      rain_laps = input$rainlaps
     )
-    predict(rf_model, new_data)
+    predict(final_fit, new_data)
   })
   
   # Prediction output
   output$prediction_value <- renderText({
-    paste("Predicted Value:", round(prediction(), 3))
+    paste("Predicted Lap Time:", round(prediction(), 3))
   })
   
   # Variable importance plot
