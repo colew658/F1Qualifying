@@ -626,7 +626,7 @@ best_laps <- full_preds %>%
   # Sort by time difference
   arrange(TIME_DIFF) %>%
   # Take only the top 10 laps
-  head(n = 10) %>%
+  head(n = 20) %>%
   # Select only relevant variables
   select(8, 13:17, 19:20, 23, 29, 37:38) %>%
   # Move actual lap time next to predicted for ease of comparison
@@ -653,6 +653,7 @@ lap_reactable <- reactable(
   striped = T,
   highlight = T,
   bordered = T,
+  defaultPageSize = 20,
   theme = reactableTheme(
     borderColor = "#959595",
     stripedColor = "ivory3",
