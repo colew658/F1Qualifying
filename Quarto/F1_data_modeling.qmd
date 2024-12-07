@@ -429,6 +429,7 @@ weatheronly_tune %>% show_best(metric = "mae"),
 weatheronly_tune %>% show_best(metric = "rsq"))
 ```
 
+### Variable Importance
 ```{r weatherimp}
 # Native random forest model
 weatheronly_extract <- extract_fit_engine(weatheronly_finalwf %>% fit(weatheronly_data))
@@ -446,6 +447,32 @@ predictor_ranger <- Predictor$new(model = weatheronly_extract,
 imp_weatheronly <- readRDS("../Data/imp_weatheronly.rds")
 plot(imp_weatheronly)
 ```
+
+### ALE Plots
+```{r weatherale}
+weatheronly_ale_humidity <- FeatureEffect$new(predictor_ranger, feature = "HUMIDITY", method='ale')
+weatheronly_ale_humidity$plot()
+
+weatheronly_ale_pressure <- FeatureEffect$new(predictor_ranger, feature = "PRESSURE", method='ale')
+weatheronly_ale_pressure$plot()
+
+weatheronly_ale_airtemp <- FeatureEffect$new(predictor_ranger, feature = "AIR_TEMPERATURE", method='ale')
+weatheronly_ale_airtemp$plot()
+
+weatheronly_ale_tracktemp <- FeatureEffect$new(predictor_ranger, feature = "TRACK_TEMPERATURE", method='ale')
+weatheronly_ale_tracktemp$plot()
+```
+
+
+
+
+
+
+
+
+
+
+
 
 
 
