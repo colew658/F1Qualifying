@@ -565,11 +565,32 @@ full_preds <- cbind(full_eng, preds) %>%
 ```{r driversummary}
 driver_summary <- full_preds %>%
   group_by(FULL_NAME) %>%
-  summarise(n = n()) %>%
-  ungroup()
+  summarise(
+    # Total laps
+    n = n(),
+    # Average time difference (actual - predicted)
+    avg_diff = mean(TIME_DIFF),
+    # Percentage of laps where the driver outperformed the prediction
+    pct_outperform = sum(LAP_DURATION < PRED) / n
+    ) %>%
+  ungroup() %>%
+  # Sort by average time difference (best drivers on top)
+  arrange(avg_diff)
 
 ```
 
+## "Best" Laps Table
+```{r bestlaps}
+best_laps <- full_preds %>%
+  # Sort by time difference
+  arrange(TIME_DIFF) %>%
+  # Take only the top 10 laps
+  head(n = 10) %>%
+  # Select only relevant variables
+  select(8, 13:17, 19:20, 23, 29, 37:38) %>%
+  # Move actual lap time next to predicted for ease of comparison
+  relocate(LAP_DURATION, .after = YEAR)
+```
 
 
 
