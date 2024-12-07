@@ -606,6 +606,7 @@ driver_reactable <- reactable(
   driver_summary,
   # Round all numeric variables to 2 digits
   defaultColDef = colDef(format = colFormat(digit = 2)),
+  columns = list(`Number of Laps` = colDef(format = colFormat(digit = 0))),
   striped = T,
   highlight = T,
   bordered = T,
