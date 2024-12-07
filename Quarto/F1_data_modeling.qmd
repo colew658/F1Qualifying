@@ -455,15 +455,31 @@ plot(imp_weatheronly)
 ```{r weatherale}
 weatheronly_ale_humidity <- FeatureEffect$new(predictor_ranger, feature = "HUMIDITY", method='ale')
 weatheronly_ale_humidity$plot()
+# saveRDS(weatheronly_ale_humidity, "../Data/humidity_ale.rds")
 
 weatheronly_ale_pressure <- FeatureEffect$new(predictor_ranger, feature = "PRESSURE", method='ale')
 weatheronly_ale_pressure$plot()
+# saveRDS(weatheronly_ale_pressure, "../Data/pressure_ale.rds")
 
 weatheronly_ale_airtemp <- FeatureEffect$new(predictor_ranger, feature = "AIR_TEMPERATURE", method='ale')
 weatheronly_ale_airtemp$plot()
+# saveRDS(weatheronly_ale_airtemp, "../Data/airtemp_ale.rds")
 
 weatheronly_ale_tracktemp <- FeatureEffect$new(predictor_ranger, feature = "TRACK_TEMPERATURE", method='ale')
 weatheronly_ale_tracktemp$plot()
+# saveRDS(weatheronly_ale_tracktemp, "../Data/tracktemp_ale.rds")
+
+weatheronly_ale_windspeed <- FeatureEffect$new(predictor_ranger, feature = "WIND_SPEED", method='ale')
+weatheronly_ale_windspeed$plot()
+# saveRDS(weatheronly_ale_windspeed, "../Data/windspeed_ale.rds")
+
+weatheronly_ale_rainlaps <- FeatureEffect$new(predictor_ranger, feature = "rain_laps", method='ale')
+weatheronly_ale_rainlaps$plot()
+# saveRDS(weatheronly_ale_rainlaps, "../Data/rainlaps_ale.rds")
+
+weatheronly_ale_rainfall <- FeatureEffect$new(predictor_ranger, feature = "RAINFALL_X1", method='ale')
+weatheronly_ale_rainfall$plot()
+# saveRDS(weatheronly_ale_rainfall, "../Data/rainfall_ale.rds")
 ```
 
 ## Remove Mexico City Laps Because of Extreme Low Pressure
