@@ -2,6 +2,8 @@ library(shiny)
 library(bslib)
 library(reactable)
 library(ggplot2)
+library(tidymodels)
+library(ranger)
 
 final_fit <- readRDS("Data/final_fit.rds")
 
