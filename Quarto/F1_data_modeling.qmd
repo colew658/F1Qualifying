@@ -554,6 +554,8 @@ nomex_ale_pressure$plot()
 ```{r preds}
 # Fit the final model on the modeling data
 final_fit <- fit(weatheronly_finalwf, weatheronly_data)
+# saveRDS(final_fit, "../Data/final_fit.rds")
+
 # Generate predictions on the full data
 preds <- predict(final_fit, full_eng)
 # Add predictions to full dataset
