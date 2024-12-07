@@ -597,6 +597,8 @@ driver_reactable <- reactable(
   )
 
 driver_reactable
+
+# saveRDS(driver_reactable, "../Data/driver_reactable.rds")
 ```
 
 ## "Best" Laps Table
@@ -643,7 +645,7 @@ lap_reactable <- reactable(
 
 lap_reactable
 
-saveRDS(lap_reactable, "../Data/lap_reactable.rds")
+# saveRDS(lap_reactable, "../Data/lap_reactable.rds")
 ```
 
 
