@@ -520,8 +520,29 @@ nomex_tune %>% show_best(metric = "mae"),
 nomex_tune %>% show_best(metric = "rsq"))
 
 ```
+### Variable Importance
+```{r nomeximp}
+# Native random forest model
+nomex_extract <- extract_fit_engine(nomex_finalwf %>% fit(nomex_data))
 
+# Create prediction function
+pfun_ranger <- function(object, newdata) predict(object, data = newdata)$predictions
 
+# Create a base iml object that is needed before generating additional plots
+predictor_ranger <- Predictor$new(model = nomex_extract, 
+                                  data = nomex_juice[, -7], 
+                                  y = nomex_juice[, 7], predict.fun = pfun_ranger)
+
+# imp_nomex <- FeatureImp$new(predictor_ranger, loss = "rmse")
+# saveRDS(imp_nomex, "../Data/imp_nomex.rds")
+imp_nomex <- readRDS("../Data/imp_nomex.rds")
+plot(imp_nomex)
+```
+### ALE Plot for Pressure
+```{r pressureale}
+nomex_ale_pressure <- FeatureEffect$new(predictor_ranger, feature = "PRESSURE", method='ale')
+nomex_ale_pressure$plot()
+```
 
 
 
