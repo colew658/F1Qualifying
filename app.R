@@ -51,10 +51,10 @@ ui <- page_navbar(
             )
   ),
   
-  nav_panel("Model Performance",
+  nav_panel("Best Laps",
             card(
-              card_header("Model Metrics"),
-              DTOutput("model_metrics")
+              card_header("Best Laps Table"),
+              reactableOutput("lap_reactable")
             )
   ),
   
@@ -122,17 +122,9 @@ server <- function(input, output) {
     readRDS("Data/driver_reactable.rds")
   })
   
-  # Model performance metrics
-  output$model_metrics <- renderDT({
-    metrics <- data.frame(
-      Metric = c("R-squared", "MSE", "MAE"),
-      Value = c(
-        round(rf_model$rsq[length(rf_model$rsq)], 3),
-        round(mean(rf_model$mse), 3),
-        round(mean(abs(rf_model$y - predict(rf_model))), 3)
-      )
-    )
-    datatable(metrics)
+  # Best laps summary table
+  output$lap_reactable <- renderReactable({
+    readRDS("Data/lap_reactable.rds")
   })
   
   # Correlation matrix
