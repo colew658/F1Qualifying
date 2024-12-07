@@ -267,4 +267,6 @@ weather_reactable <- reactable(
 )
 
 weather_reactable
+
+# saveRDS(weather_reactable, "../Data/weather_reactable.rds")
 ```
