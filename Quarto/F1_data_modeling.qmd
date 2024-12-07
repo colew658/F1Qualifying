@@ -30,6 +30,9 @@ library(finetune)
 library(xgboost)
 library(kableExtra)
 library(iml)
+library(reactable)
+library(reactablefmtr)
+library(htmltools)
 set.seed(1)
 
 full_no_missing <- read_csv("../Data/full_no_missing.csv")
@@ -579,6 +582,23 @@ driver_summary <- full_preds %>%
   rename(`Driver Name` = FULL_NAME)
 ```
 
+### Reactable
+```{r driverreact}
+driver_reactable <- reactable(
+  driver_summary,
+  # Round all numeric variables to 2 digits
+  defaultColDef = colDef(format = colFormat(digit = 2)),
+  striped = T,
+  highlight = T,
+  bordered = T,
+  theme = reactableTheme(
+    highlightColor = "#fa9696"
+  )
+  )
+
+driver_reactable
+```
+
 ## "Best" Laps Table
 ```{r bestlaps}
 best_laps <- full_preds %>%
@@ -590,15 +610,41 @@ best_laps <- full_preds %>%
   select(8, 13:17, 19:20, 23, 29, 37:38) %>%
   # Move actual lap time next to predicted for ease of comparison
   relocate(LAP_DURATION, .after = YEAR) %>%
-  rename(`Air Temp (C)` = AIR_TEMPERATURE, `Relative Humidity (%)` = HUMIDITY, 
-         `Air Pressure` = PRESSURE, `Raining?` = RAINFALL,
-         `Track Temp (C)` = TRACK_TEMPERATURE, `Wind Speed` = WIND_SPEED,
+  rename(`Air Temp (°C)` = AIR_TEMPERATURE, `Relative Humidity (%)` = HUMIDITY, 
+         `Pressure (mbar)` = PRESSURE, `Rain` = RAINFALL,
+         `Track Temp (°C)` = TRACK_TEMPERATURE, `Wind Speed (m/s)` = WIND_SPEED,
          `Driver Name` = FULL_NAME, `Circuit` = CIRCUIT_SHORT_NAME,
          `Year` = YEAR, `Lap Time (s)` = LAP_DURATION,
          `Predicted Lap Time` = PRED, `Time Difference` = TIME_DIFF)
 ```
 
+### Reactable
+```{r lapreact}
+lap_reactable <- reactable(
+  best_laps,
+  # Round all numeric variables to two digits
+  defaultColDef = colDef(format = colFormat(digit = 2)),
+  # Add custom formatting for some columns
+  columns = list(
+    `Driver Name` = colDef(width = 135),
+    Year = colDef(format = colFormat(digits = 0))
+  ),
+  striped = T,
+  highlight = T,
+  bordered = T,
+  theme = reactableTheme(
+    borderColor = "#959595",
+    stripedColor = "ivory3",
+    highlightColor = "#98F5FF",
+    cellPadding = "8px 12px",
+    searchInputStyle = list(width = "100%")
+  )
+  )
 
+lap_reactable
+
+saveRDS(lap_reactable, "../Data/lap_reactable.rds")
+```
 
 
 
