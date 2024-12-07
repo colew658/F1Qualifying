@@ -463,7 +463,63 @@ weatheronly_ale_tracktemp <- FeatureEffect$new(predictor_ranger, feature = "TRAC
 weatheronly_ale_tracktemp$plot()
 ```
 
+## Remove Mexico City Laps Because of Extreme Low Pressure
+```{r nomex}
+# Remove Mexico City laps from data
+nomex_data <- modeling_data[modeling_data$CIRCUIT_SHORT_NAME != "Mexico City", -c(8:10)]
 
+nomex_rec <- recipe(LAP_DURATION ~ ., data = nomex_data) %>%
+  step_normalize(all_numeric_predictors()) %>%
+  step_dummy(all_nominal_predictors(), one_hot = F)
+
+nomex_juice <- juice(prep(nomex_rec))
+  
+# Create a random forest model
+nomex_mod <- rand_forest(
+  trees = tune(),
+  mtry = tune(),
+  min_n = tune()
+) %>%
+  set_mode("regression") %>%
+  set_engine("ranger", num.threads = 7)
+
+nomex_wf <- workflow() %>%
+  add_recipe(nomex_rec) %>%
+  add_model(nomex_mod)
+
+# Create a grid of tuning parameters
+nomex_param <- extract_parameter_set_dials(nomex_mod) %>%
+  update(mtry = mtry(c(1, 7)))
+
+nomex_tunegrid <- grid_space_filling(nomex_param, size = 5)
+
+# Create a new CV
+nomex_rep <- vfold_cv(nomex_data, v = 10, repeats = 2, strata = "LAP_DURATION")
+
+# Tune the model
+# nomex_tune <- tune_race_anova(
+#   nomex_wf,
+#   resamples = nomex_rep,
+#   grid = nomex_tunegrid,
+#   metrics = metric_set(yardstick::rmse, yardstick::mae, yardstick::rsq)
+# )
+
+# saveRDS(nomex_tune, "../Data/nomex_tune.rds")
+nomex_tune <- readRDS("../Data/nomex_tune.rds")
+
+nomex_besttune <- select_best(nomex_tune, metric = "rmse")
+
+nomex_finalmod <- finalize_model(nomex_mod, nomex_besttune)
+
+nomex_finalwf <- workflow() %>%
+  add_recipe(nomex_rec) %>%
+  add_model(nomex_finalmod)
+
+rbind(nomex_tune %>% show_best(metric = "rmse"),
+nomex_tune %>% show_best(metric = "mae"),
+nomex_tune %>% show_best(metric = "rsq"))
+
+```
 
 
 
