@@ -26,9 +26,18 @@ ui <- page_navbar(
                 card_header("Model Prediction"),
                 textOutput("prediction_value")
               ),
-              card(
-                card_header("Feature Importance"),
-                plotOutput("importance_plot")
+              layout_column_wrap(
+                width = 1/2,
+                card(
+                  card_header("Feature Importance"),
+                  plotOutput("importance_plot")
+                ),
+                card(
+                  card_header("ALE Plot"),
+                  selectInput("ale_feature", "Select Feature:", 
+                              choices = paste0("x", 1:7)),
+                  plotOutput("ale_plot")
+                )
               )
             )
   ),
