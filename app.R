@@ -86,15 +86,7 @@ server <- function(input, output) {
   
   # Variable importance plot
   output$importance_plot <- renderPlot({
-    importance_df <- data.frame(
-      Variable = rownames(importance(rf_model)),
-      Importance = importance(rf_model)[,1]
-    )
-    ggplot(importance_df, aes(x = reorder(Variable, Importance), y = Importance)) +
-      geom_bar(stat = "identity", fill = "steelblue") +
-      coord_flip() +
-      theme_minimal() +
-      labs(x = "Variables", y = "Importance")
+    plot(readRDS("Data/imp_weatheronly.rds"))
   })
   
   # ALE plot
