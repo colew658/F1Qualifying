@@ -97,6 +97,15 @@ server <- function(input, output) {
       labs(x = "Variables", y = "Importance")
   })
   
+  # ALE plot
+  output$ale_plot <- renderPlot({
+    effect <- FeatureEffect$new(predictor, feature = input$ale_feature, method = "ale")
+    plot(effect) +
+      theme_minimal() +
+      labs(title = paste("ALE Plot for", input$ale_feature),
+           y = "Effect on Prediction")
+  })
+  
   # Variable summary table
   output$var_summary <- renderDT({
     summary_stats <- sapply(data[,1:7], function(x) {
