@@ -545,7 +545,30 @@ nomex_ale_pressure$plot()
 ```
 
 
+# Summary Tables
 
+## Generate Predictions to Create Summary Dataset
+```{r preds}
+# Fit the final model on the modeling data
+final_fit <- fit(weatheronly_finalwf, weatheronly_data)
+# Generate predictions on the full data
+preds <- predict(final_fit, full_eng)
+# Add predictions to full dataset
+full_preds <- cbind(full_eng, preds) %>%
+  # Calculate the difference of actual and predicted
+  mutate(time_diff = LAP_DURATION - .pred) %>%
+  # Standardize column names
+  clean_names(case = "all_caps")
+```
+
+## Create Driver Summary Table
+```{r driversummary}
+driver_summary <- full_preds %>%
+  group_by(FULL_NAME) %>%
+  summarise(n = n()) %>%
+  ungroup()
+
+```
 
 
 
