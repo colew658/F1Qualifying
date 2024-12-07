@@ -46,22 +46,19 @@ ui <- page_navbar(
   
   nav_panel("Driver Summary",
             card(
-              card_header("Driver Summary Table"),
               reactableOutput("driver_summary")
             )
   ),
   
   nav_panel("Best Laps",
             card(
-              card_header("Best Laps Table"),
               reactableOutput("lap_reactable")
             )
   ),
   
-  nav_panel("Correlation Matrix",
+  nav_panel("Weather Summary",
             card(
-              card_header("Variable Correlations"),
-              DTOutput("correlation_matrix")
+              reactableOutput("weather_reactable")
             )
   )
 )
@@ -127,10 +124,9 @@ server <- function(input, output) {
     readRDS("Data/lap_reactable.rds")
   })
   
-  # Correlation matrix
-  output$correlation_matrix <- renderDT({
-    cor_matrix <- cor(data[,1:7])
-    datatable(round(cor_matrix, 3))
+  # Weather summary table
+  output$weather_reactable <- renderReactable({
+    readRDS("Data/weather_reactable.rds")
   })
 }
 
