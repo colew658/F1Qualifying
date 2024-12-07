@@ -256,7 +256,7 @@ weather_reactable <- reactable(
   highlight = TRUE,
   striped = TRUE,
   filterable = TRUE,
-  defaultPageSize = 10,
+  defaultPageSize = 20,
   theme = reactableTheme(
     borderColor = "#959595",
     stripedColor = "ivory3",
