@@ -567,16 +567,16 @@ driver_summary <- full_preds %>%
   group_by(FULL_NAME) %>%
   summarise(
     # Total laps
-    n = n(),
+    `Number of Laps` = n(),
     # Average time difference (actual - predicted)
-    avg_diff = mean(TIME_DIFF),
+    `Average Time Difference` = mean(TIME_DIFF),
     # Percentage of laps where the driver outperformed the prediction
-    pct_outperform = sum(LAP_DURATION < PRED) / n
+    `Percent of Laps Outperformed Expectation` = sum(LAP_DURATION < PRED) / n()
     ) %>%
   ungroup() %>%
   # Sort by average time difference (best drivers on top)
-  arrange(avg_diff)
-
+  arrange(`Average Time Difference`) %>%
+  rename(`Driver Name` = FULL_NAME)
 ```
 
 ## "Best" Laps Table
@@ -589,7 +589,13 @@ best_laps <- full_preds %>%
   # Select only relevant variables
   select(8, 13:17, 19:20, 23, 29, 37:38) %>%
   # Move actual lap time next to predicted for ease of comparison
-  relocate(LAP_DURATION, .after = YEAR)
+  relocate(LAP_DURATION, .after = YEAR) %>%
+  rename(`Air Temp (C)` = AIR_TEMPERATURE, `Relative Humidity (%)` = HUMIDITY, 
+         `Air Pressure` = PRESSURE, `Raining?` = RAINFALL,
+         `Track Temp (C)` = TRACK_TEMPERATURE, `Wind Speed` = WIND_SPEED,
+         `Driver Name` = FULL_NAME, `Circuit` = CIRCUIT_SHORT_NAME,
+         `Year` = YEAR, `Lap Time (s)` = LAP_DURATION,
+         `Predicted Lap Time` = PRED, `Time Difference` = TIME_DIFF)
 ```
 
 
