@@ -9,5 +9,5 @@ I then applied four modeling paradigms to this data (linear regression, Bayesian
 While track length and number of turns were the most important variables, I found that humidity, air and track temperature, and air pressure had predictive value. Faster lap times were associated with nonextreme humidity, low pressure, high air temperature, and moderately low track temperature. The most important weather factor was humidity, as there was a huge jump in lap times when the humidity was extremely high (which could be because high humidity often comes with rain). Because of this model’s extremely high predictive accuracy, it is a useful tool for teams to evaluate how their drivers handle different weather conditions.
 
 
-## Visualizations App
-An app with some visualizations is deployed [here](https://oh8w2h-cole-wagner.shinyapps.io/F1Qualifying/).
+## App
+The production version of the accompanying app is delployed [here](https://oh8w2h-cole-wagner.shinyapps.io/F1Qualifying/).
