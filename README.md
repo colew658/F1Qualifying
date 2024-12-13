@@ -10,4 +10,4 @@ While track length and number of turns were the most important variables, I foun
 
 
 ## App
-The production version of the accompanying app is delployed [here](https://oh8w2h-cole-wagner.shinyapps.io/F1Qualifying/).
+The production version of the accompanying app is deployed [here](https://oh8w2h-cole-wagner.shinyapps.io/F1Qualifying/).
